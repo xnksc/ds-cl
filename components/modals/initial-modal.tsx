@@ -1,7 +1,10 @@
 "use client";
+
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import FileUpload from "../file-upload";
 import {
   Dialog,
   DialogContent,
@@ -20,12 +23,11 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { useEffect, useState } from "react";
-import FileUpload from "../file-upload";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  imageUrl: z.string().min(1, "Image is required"),
+  imageUrl: z.string().min(1, "Image URL is required"),
+  fileType: z.string().min(1, "File type is required"),
 });
 
 const InitialModal = () => {
@@ -34,22 +36,23 @@ const InitialModal = () => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       imageUrl: "",
+      fileType: "",
     },
   });
 
   const isLoading = form.formState.isSubmitting;
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log(values);
   };
 
-  if (!isMounted) {
-    // return null;
-  }
+  if (!isMounted) return null;
 
   return (
     <Dialog open>
@@ -59,7 +62,8 @@ const InitialModal = () => {
             Customize the server
           </DialogTitle>
           <DialogDescription className="text-center text-zinc-500">
-            Name your server and upload avatar. You can always change it later.
+            Name your server and upload an avatar. You can always change it
+            later.
           </DialogDescription>
         </DialogHeader>
 
@@ -75,14 +79,22 @@ const InitialModal = () => {
                       <FormControl>
                         <FileUpload
                           endpoint="serverImage"
-                          value={field.value}
-                          onChange={field.onChange}
-                        ></FileUpload>
+                          value={{
+                            url: field.value,
+                            type: form.getValues("fileType"),
+                          }}
+                          onChange={(file) => {
+                            form.setValue("imageUrl", file.url);
+                            form.setValue("fileType", file.type);
+                          }}
+                        />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
-                ></FormField>
+                />
               </div>
+
               <FormField
                 control={form.control}
                 name="name"
@@ -97,13 +109,14 @@ const InitialModal = () => {
                         placeholder="Enter server name"
                         className="bg-zinc-200 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                         {...field}
-                      ></Input>
+                      />
                     </FormControl>
-                    <FormMessage></FormMessage>
+                    <FormMessage />
                   </FormItem>
                 )}
-              ></FormField>
+              />
             </div>
+
             <DialogFooter className="px-6 py-4">
               <Button variant={"primary"} disabled={isLoading}>
                 Create
